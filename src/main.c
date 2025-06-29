@@ -36,7 +36,10 @@ int main() {
 
         command_t *cmd = parse_command(line);
         if (cmd) {
-            if (is_builtin(cmd)) {
+            if (cmd->input_redirect || cmd->output_redirect) {
+                // Always use execute_command for redirection
+                execute_command(cmd);
+            } else if (is_builtin(cmd)) {
                 run_builtin(cmd);
             } else {
                 execute_command(cmd);

@@ -118,12 +118,12 @@ static int builtin_pwd_impl(command_t *cmd) {
 
 static int builtin_echo_impl(command_t *cmd) {
     for (int i = 1; i < cmd->argc; i++) {
-        printf("%s", cmd->args[i]);
-        if (i < cmd->argc - 1) {
-            printf(" ");
+        if (i > 1) write(STDOUT_FILENO, " ", 1);
+        if (cmd->args[i]) {
+            write(STDOUT_FILENO, cmd->args[i], strlen(cmd->args[i]));
         }
     }
-    printf("\n");
+    write(STDOUT_FILENO, "\n", 1);
     return 0;
 }
 
@@ -203,4 +203,4 @@ int get_builtin_count(void) {
         count++;
     }
     return count;
-}
+} 

@@ -14,23 +14,21 @@ int execute_command(command_t *cmd) {
     if (!cmd || !cmd->args || cmd->argc == 0) {
         return 1;
     }
-    
-    // Check if it's a builtin command
-    if (is_builtin(cmd)) {
-        return run_builtin(cmd);
-    }
-    
+
     // Handle background execution
     if (cmd->background) {
         return execute_background(cmd);
     }
-    
-    // Handle redirections
+
+    // Handle redirections for all commands (both builtin and external)
     if (cmd->input_redirect || cmd->output_redirect) {
         return execute_with_redirection(cmd);
     }
-    
-    // Execute external command
+
+    // No redirection - handle builtin or external
+    if (is_builtin(cmd)) {
+        return run_builtin(cmd);
+    }
     return execute_external(cmd);
 }
 
@@ -78,10 +76,16 @@ int execute_with_redirection(command_t *cmd) {
             close(fd);
         }
         
-        // Execute the command
-        execvp(cmd->args[0], cmd->args);
-        print_system_error("exec failed");
-        exit(1);
+        // Execute the command (builtin or external)
+        if (is_builtin(cmd)) {
+            int ret = run_builtin(cmd);
+            fflush(stdout);
+            exit(ret);
+        } else {
+            execvp(cmd->args[0], cmd->args);
+            print_system_error("exec failed");
+            exit(1);
+        }
     } else {
         // Parent process
         int status;
