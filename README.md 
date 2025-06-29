@@ -1,0 +1,12 @@
+lemuen/
+├── src/
+│ ├── main.c → Entry point
+│ ├── parser.c/.h → แยก string คำสั่ง
+│ ├── executor.c/.h → จัดการ exec/fork
+│ ├── builtins.c/.h → คำสั่งภายใน (cd, exit)
+│ ├── utils.c/.h → ฟังก์ชันช่วยเหลือ
+├── include/ → เก็บ header
+├── Makefile
+└── README.md
+
+พิมพ์คำสั่งใดก็ได้ เช่น ls, pwd, cat
