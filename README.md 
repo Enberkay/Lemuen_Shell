@@ -1,24 +1,92 @@
+Lemuen Shell v0.4
+
+Lemuen คือ Shell ขนาดเล็กที่เขียนด้วยภาษา C เพื่อจำลองการทำงานของ Unix shell จริงๆ รองรับ features พื้นฐานเช่น pipeline, redirection, built-in commands, readline และ signal handling
+
+🎯 ฟีเจอร์หลัก
+
+    พิมพ์คำสั่ง Unix ทั่วไปได้ เช่น ls, pwd, cat
+
+    รองรับ redirection (<, >, >>)
+
+    รองรับ pipeline ด้วย |
+
+    built-in commands: cd, exit
+
+    ใช้งาน readline: ↑↓ history, Ctrl+R ค้นย้อนหลัง, Tab autocomplete
+
+    รองรับ signal Ctrl+C
+
+    แยกคำสั่งแบบ flexible ด้วย parser ของตัวเอง
+
+🆕 ฟีเจอร์ใหม่ใน Lemuen v0.4
+
+✅ ใช้ libreadline (ผ่าน ↑, ↓, Ctrl+R, Tab ได้เหมือน bash)
+✅ คำสั่งถูกจัดการผ่าน execvp + pipe อย่างปลอดภัย
+✅ รองรับคำสั่งต่อเนื่อง เช่น ls | grep txt > result.txt
+✅ สัญญาณ Ctrl+C จะหยุดคำสั่งที่รันอยู่ได้ทันที
+
+📦 โครงสร้างโปรเจกต์
+
 lemuen/
 ├── src/
-│ ├── main.c → Entry point
-│ ├── parser.c/.h → แยก string คำสั่ง
-│ ├── executor.c/.h → จัดการ exec/fork
-│ ├── builtins.c/.h → คำสั่งภายใน (cd, exit)
-│ ├── utils.c/.h → ฟังก์ชันช่วยเหลือ
-├── include/ → เก็บ header
-├── Makefile
-└── README.md
+│   ├── main.c → Entry point
+│   ├── parser.c / parser.h → แยกคำสั่ง, arguments, redirection
+│   ├── executor.c / executor.h → จัดการ fork, pipe, execvp
+│   ├── builtins.c / builtins.h → รองรับ cd, exit
+│   ├── utils.c / utils.h → ฟังก์ชันช่วย เช่น trim, strdup ฯลฯ
+├── include/ → เก็บ header ที่ใช้ร่วมกัน
+├── Makefile → คอมไพล์ shell ได้ง่ายๆ
+└── README.md ← เอกสารนี้
 
-พิมพ์คำสั่งใดก็ได้ เช่น ls, pwd, cat
+💻 การใช้งาน
 
-เจอร์ใหม่ใน Lemuen v0.2:
-รองรับ input redirection: ใช้ < เช่น cat < file.txt
-รองรับ output redirection: > และ >> เช่น echo Hello > out.txt
-แยกคำสั่ง, arguments และ redirection อย่างยืดหยุ่น
-ใช้ dup2 + open แบบ raw syscall เหมือน shell จริง
+ติดตั้ง libreadline ก่อน (บน Arch Linux):
 
-pipe commands: ใช้ | เพื่อเชื่อมคำสั่ง เช่น ls | grep txt
-redirection เต็มรูปแบบ: >, >>, <
-built-in commands: cd และ exit ทำงานใน shell จริง
-รองรับหลายคำสั่งต่อเนื่องใน pipeline
-สัญญาณ Ctrl+C ยังทำงานดี
+sudo pacman -S readline
+
+คอมไพล์:
+
+make
+
+หรือใช้ตรงๆ:
+
+gcc -o lemuen ./src/main.c -lreadline -lncurses
+
+รัน:
+
+./lemuen
+
+🔧 ตัวอย่างคำสั่งที่ใช้งานได้:
+
+    คำสั่งทั่วไป:
+
+    lemuen> ls
+    lemuen> echo Hello
+
+    redirection:
+
+    lemuen> echo test > out.txt
+    lemuen> cat < out.txt
+
+    pipe:
+
+    lemuen> ls | grep .c
+
+    built-in:
+
+    lemuen> cd /tmp
+    lemuen> exit
+
+    readline:
+
+    ↑ ↓ เลื่อนคำสั่ง
+    Ctrl+R ค้นย้อนหลัง
+    Tab เติมคำสั่งอัตโนมัติ
+
+📌 หมายเหตุ
+
+    Shell นี้ยังไม่รองรับ &&, ||, ตัวแปร, glob (*, ?) (แต่กำลังจะมาเร็วๆ นี้!)
+
+    ใช้ signal(SIGINT, ...) เพื่อรองรับ Ctrl+C
+
+    ใช้ dup2/open/close แทน freopen/fprintf เพื่อความใกล้เคียงกับระบบจริง
