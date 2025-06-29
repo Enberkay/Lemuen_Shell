@@ -16,3 +16,9 @@ lemuen/
 รองรับ output redirection: > และ >> เช่น echo Hello > out.txt
 แยกคำสั่ง, arguments และ redirection อย่างยืดหยุ่น
 ใช้ dup2 + open แบบ raw syscall เหมือน shell จริง
+
+pipe commands: ใช้ | เพื่อเชื่อมคำสั่ง เช่น ls | grep txt
+redirection เต็มรูปแบบ: >, >>, <
+built-in commands: cd และ exit ทำงานใน shell จริง
+รองรับหลายคำสั่งต่อเนื่องใน pipeline
+สัญญาณ Ctrl+C ยังทำงานดี
