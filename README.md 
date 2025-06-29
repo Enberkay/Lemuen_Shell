@@ -10,3 +10,9 @@ lemuen/
 └── README.md
 
 พิมพ์คำสั่งใดก็ได้ เช่น ls, pwd, cat
+
+เจอร์ใหม่ใน Lemuen v0.2:
+รองรับ input redirection: ใช้ < เช่น cat < file.txt
+รองรับ output redirection: > และ >> เช่น echo Hello > out.txt
+แยกคำสั่ง, arguments และ redirection อย่างยืดหยุ่น
+ใช้ dup2 + open แบบ raw syscall เหมือน shell จริง
