@@ -1,111 +1,109 @@
-# 🐚 Lemuen Shell v0.6
+# Lemuen Shell v0.6
 
-**A lightweight shell written in C, designed for learning and understanding shell internals.**
+**A lightweight shell implementation written in C, designed for educational purposes and understanding shell internals.**
 
-## 📋 สรุปสั้นๆ สำหรับตัวเอง
+## Overview
 
-### 🎯 **ตอนนี้ทำอะไรได้แล้ว (v0.6)**
-- ✅ **Interactive shell** พร้อม prompt สี
-- ✅ **Command history** (ลูกศรขึ้น/ลง)
-- ✅ **Builtin commands**: `cd`, `exit`, `pwd`, `echo`, `help`, `export`, `unset`
-- ✅ **External commands** (ls, cat, rm, etc.)
-- ✅ **Redirection**: `>`, `>>`, `<`
-- ✅ **Background execution**: `&`
-- ✅ **Command chaining**: `;`
-- ✅ **Signal handling**: Ctrl+C
-- ✅ **Memory management**: ไม่มี leaks
+Lemuen Shell is a command-line interpreter that provides a subset of POSIX shell functionality. It serves as both a learning tool for understanding shell architecture and a functional command-line environment.
 
-### 🚀 **ต่อไปจะทำอะไร (Roadmap)**
-- **v0.7**: `&&`, `||`, `$VAR` expansion
-- **v0.8**: Globbing (`*`, `?`, `[]`)
-- **v0.9**: Subshells, aliases
-- **v1.0**: Job control, history file
+## Current Features (v0.6)
 
----
+### Core Functionality
+- **Interactive Shell**: Command-line interface with colored prompt
+- **Command History**: Navigable history using arrow keys (readline integration)
+- **Builtin Commands**: `cd`, `exit`, `pwd`, `echo`, `help`, `export`, `unset`
+- **External Command Execution**: Support for system commands (ls, cat, rm, etc.)
+- **I/O Redirection**: Input (`<`), output (`>`, `>>`) redirection
+- **Background Execution**: Process execution with `&` operator
+- **Command Chaining**: Sequential execution with `;` separator
+- **Signal Handling**: Proper handling of SIGINT (Ctrl+C)
+- **Memory Management**: Leak-free implementation with proper cleanup
 
-## 🛠️ การใช้งาน
+### Architecture Components
+- **Parser**: Tokenization and command structure parsing
+- **Executor**: Process creation and command execution
+- **Builtins**: Internal command implementations
+- **Utilities**: String manipulation and environment variable handling
 
-### Build และ Run
+## Installation and Usage
+
+### Build Instructions
 ```bash
-# Build
+# Compile the shell
 make
 
-# Run
+# Run the shell
 ./bin/lemuen
 
-# หรือ
+# Alternative: build and run in one command
 make run
 ```
 
-### คำสั่งที่ใช้บ่อย
+### Basic Commands
 ```bash
-lemuen> ls                    # List files
-lemuen> pwd                   # Current directory
+lemuen> ls                    # List directory contents
+lemuen> pwd                   # Print working directory
 lemuen> cd ~/Documents       # Change directory
-lemuen> echo "Hello"         # Print text
-lemuen> help                 # Show builtins
+lemuen> echo "Hello World"   # Print text
+lemuen> help                 # Display builtin commands
 lemuen> exit                 # Exit shell
 ```
 
-### Redirection (สำคัญ!)
+### I/O Redirection Examples
 ```bash
-lemuen> echo "Hello" > file.txt    # Write to file
-lemuen> cat file.txt               # Read file
+lemuen> echo "Hello" > file.txt    # Write to file (overwrite)
+lemuen> cat file.txt               # Read file contents
 lemuen> echo "More" >> file.txt    # Append to file
 lemuen> cat < file.txt             # Input redirection
 ```
 
-### Background & Chaining
+### Process Control
 ```bash
-lemuen> sleep 10 &           # Run in background
-lemuen> ls; pwd; echo done   # Multiple commands
+lemuen> sleep 10 &           # Execute in background
+lemuen> ls; pwd; echo done   # Sequential command execution
 ```
 
----
-
-## 🏗️ โครงสร้างโปรเจกต์
+## Project Structure
 
 ```
-lemuen_shell/
+Lemuen_Shell/
 ├── include/           # Header files
-│   ├── builtins.h     # Builtin command definitions
-│   ├── executor.h     # Command execution
-│   ├── parser.h       # Command parsing
-│   └── utils.h        # Utility functions
+│   ├── builtins.h     # Builtin command declarations
+│   ├── executor.h     # Command execution interface
+│   ├── parser.h       # Command parsing interface
+│   └── utils.h        # Utility function declarations
 ├── src/              # Source files
-│   ├── main.c        # Main shell loop + signal handling
-│   ├── builtins.c    # Builtin implementations
+│   ├── main.c        # Main shell loop and signal handling
+│   ├── builtins.c    # Builtin command implementations
 │   ├── executor.c    # Command execution logic
-│   ├── parser.c      # Command parsing logic
+│   ├── parser.c      # Command parsing implementation
 │   └── utils.c       # Utility functions
 ├── obj/              # Object files (generated)
 ├── bin/              # Executable (generated)
 ├── Makefile          # Build configuration
-└── README.md         # This file
+└── README.md         # Documentation
 ```
 
----
+## Technical Architecture
 
-## 🔧 Architecture (สำหรับตัวเอง)
-
-### 1. **main.c** - จุดเริ่มต้น
+### 1. Main Loop (main.c)
 ```c
-// Main loop
+// Primary execution loop
 while (readline()) {
     cmd = parse_command(line);
     if (cmd) {
         if (has_redirection) {
-            execute_command(cmd);  // ใช้ fork+exec
+            execute_command(cmd);  // Fork+exec for redirection
         } else if (is_builtin) {
-            run_builtin(cmd);      // เรียกตรง
+            run_builtin(cmd);      // Direct execution
         } else {
-            execute_command(cmd);  // ใช้ fork+exec
+            execute_command(cmd);  // Fork+exec for external
         }
     }
 }
 ```
 
-### 2. **parser.c** - แยกคำสั่ง
+### 2. Command Parsing (parser.c)
 ```c
 // Parse: "echo hello > file.txt"
 command_t {
@@ -115,134 +113,135 @@ command_t {
 }
 ```
 
-### 3. **executor.c** - รันคำสั่ง
+### 3. Command Execution (executor.c)
 ```c
-// ถ้ามี redirection -> fork+exec
-// ถ้าไม่มี redirection -> เรียกตรง (builtin) หรือ fork+exec (external)
+// Execution strategy:
+// - Builtin commands: direct execution in parent process
+// - External commands: fork+exec in child process
+// - Redirection: always fork+exec for proper file descriptor handling
 ```
 
-### 4. **builtins.c** - คำสั่งในตัว
+### 4. Builtin Commands (builtins.c)
 ```c
-// Builtin commands ที่ไม่ต้อง fork
+// Internal commands executed without process creation
 cd, pwd, echo, help, exit, export, unset
 ```
 
-### 5. **utils.c** - ฟังก์ชันช่วยเหลือ
+### 5. Utilities (utils.c)
 ```c
-// String manipulation, environment variables, path expansion
+// String manipulation, environment variable management, path expansion
 ```
 
----
+## Development and Debugging
 
-## 🐛 Debugging
-
-### Memory Leaks
+### Build Targets
 ```bash
+make help          # Display all available targets
+make clean         # Remove build artifacts
+make debug         # Build with debug symbols
+make release       # Optimized release build
+make valgrind      # Run with memory leak detection
+```
+
+### Memory Management
+```bash
+# Check for memory leaks
 make valgrind
 ```
 
-### Build Options
+### Code Quality
 ```bash
-make help          # Show all targets
-make clean         # Clean build
-make debug         # Debug build
-make release       # Optimized build
+make format        # Format code with clang-format
+make cppcheck      # Run static analysis
 ```
+
+## Implementation Details
+
+### Process Management Strategy
+- **Builtin Commands**: Execute directly in parent process for efficiency
+- **External Commands**: Fork child process and execute with execvp()
+- **Redirection**: Always fork to handle file descriptor manipulation
+- **Background Execution**: Fork without waiting for completion
+
+### Signal Handling
+- **SIGINT (Ctrl+C)**: Properly handled with readline integration
+- **Child Processes**: Signal handlers reset to default behavior
+- **Parent Process**: Maintains shell state during signal events
+
+### Memory Management
+- **Command Structures**: Proper allocation and deallocation
+- **String Arrays**: Null-terminated arrays with correct sizing
+- **File Descriptors**: Proper cleanup after redirection operations
+
+## Known Issues and Solutions
+
+### 1. Redirection with Builtins
+**Issue**: Builtin commands with redirection not working
+**Root Cause**: Builtin check performed before redirection check
+**Solution**: Check for redirection before builtin classification
+
+### 2. Memory Management
+**Issue**: Invalid pointer errors during cleanup
+**Root Cause**: String arrays not properly null-terminated
+**Solution**: Ensure null-termination in string splitting functions
+
+### 3. Output Buffering
+**Issue**: Builtin output not appearing with redirection
+**Root Cause**: printf() buffering in child processes
+**Solution**: Use write() or fflush() before process termination
+
+## Roadmap
+
+### Version 0.7
+- Logical operators (`&&`, `||`)
+- Environment variable expansion (`$VAR`)
+- Enhanced error handling
+
+### Version 0.8
+- Globbing support (`*`, `?`, `[]`)
+- Enhanced path expansion
+- Improved command completion
+
+### Version 0.9
+- Subshell support (`$(command)`)
+- Command aliases
+- Configuration file support
+
+### Version 1.0
+- Job control (`jobs`, `fg`, `bg`)
+- Persistent command history
+- Advanced signal handling
+
+## Technical Notes
+
+### Dependencies
+- **GNU Readline**: Command history and line editing
+- **POSIX C**: Standard C library functions
+- **GCC**: C compiler with C99 standard
+
+### Build Requirements
+- GCC compiler
+- GNU Make
+- Readline development libraries
+- POSIX-compliant system
+
+### Performance Characteristics
+- **Memory Usage**: Minimal overhead for builtin commands
+- **Process Creation**: Standard fork+exec for external commands
+- **Response Time**: Immediate for builtins, system-dependent for externals
+
+## Contributing
+
+This project is designed for educational purposes. Contributions should focus on:
+- Code clarity and documentation
+- Educational value and learning opportunities
+- POSIX compliance where applicable
+- Memory safety and error handling
+
+## License
+
+This project is provided as-is for educational purposes. Use at your own discretion.
 
 ---
 
-## 💡 สิ่งที่เรียนรู้
-
-### 1. **Redirection Logic**
-- **ปัญหาเดิม**: builtin + redirection ไม่ทำงาน
-- **สาเหตุ**: main.c เช็ค `is_builtin()` ก่อนเช็ค redirection
-- **วิธีแก้**: เช็ค redirection ก่อน builtin
-
-### 2. **Memory Management**
-- **ปัญหาเดิม**: `free(): invalid pointer`
-- **สาเหตุ**: `split_string()` ไม่ได้ null-terminate array
-- **วิธีแก้**: เพิ่ม `tokens[size] = NULL;`
-
-### 3. **Process Management**
-- **Builtin**: รันใน parent process
-- **External + Redirection**: fork+exec ใน child process
-- **Background**: fork แล้วไม่รอ
-
-### 4. **Signal Handling**
-- **Ctrl+C**: `handle_sigint()` -> `rl_on_new_line()`
-- **Child processes**: reset signal handlers
-
----
-
-## 🔍 ปัญหาที่เจอและวิธีแก้
-
-### 1. **Redirection ไม่ทำงาน**
-```
-ปัญหา: echo test > file.txt ไม่สร้างไฟล์
-สาเหตุ: main.c เช็ค builtin ก่อน redirection
-วิธีแก้: เช็ค redirection ก่อน builtin ใน main.c
-```
-
-### 2. **Memory Leaks**
-```
-ปัญหา: free(): invalid pointer
-สาเหตุ: Array ไม่ได้ null-terminated
-วิธีแก้: เพิ่ม null-terminator ใน split_string()
-```
-
-### 3. **Builtin ไม่ทำงานกับ redirection**
-```
-ปัญหา: pwd > file.txt ไม่ทำงาน
-สาเหตุ: ใช้ printf() ใน child process
-วิธีแก้: ใช้ write() หรือ fflush() ก่อน exit
-```
-
----
-
-## 📝 Notes สำหรับตัวเอง
-
-### **สิ่งที่ทำได้แล้ว**
-- ✅ Shell พื้นฐานทำงานได้
-- ✅ Redirection ครบถ้วน
-- ✅ Memory management ดี
-- ✅ Error handling ครบ
-
-### **สิ่งที่ต้องทำต่อ**
-- [ ] Logical operators (`&&`, `||`)
-- [ ] Environment variables (`$HOME`, `$PATH`)
-- [ ] Globbing (`ls *.txt`)
-- [ ] Job control (`jobs`, `fg`, `bg`)
-- [ ] History file
-- [ ] Configuration file
-
-### **คำสั่งที่ใช้บ่อย**
-```bash
-make clean && make    # Rebuild
-make valgrind         # Check memory
-./bin/lemuen          # Run shell
-```
-
----
-
-## 🎯 สรุป
-
-**Lemuen Shell v0.6** เป็น shell ที่ทำงานได้จริง มีฟีเจอร์ครบถ้วนสำหรับการใช้งานพื้นฐาน และพร้อมสำหรับการพัฒนาต่อไป
-
-**Key Features:**
-- Interactive shell with history
-- Builtin + external commands
-- Redirection (>, >>, <)
-- Background execution
-- Command chaining
-- Signal handling
-- Memory safe
-
-**Next Steps:**
-- Add logical operators
-- Add environment variable expansion
-- Add globbing support
-- Add job control
-
----
-
-**Happy shelling! 🐚✨** 
+**Lemuen Shell v0.6** - A functional shell implementation demonstrating core shell concepts and system programming principles. 
