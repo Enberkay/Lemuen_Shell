@@ -26,12 +26,30 @@ command_t *parse_command(const char *line) {
         trim(trimmed);
     }
     
-    // Check for command chaining
-    char *semicolon = strchr(trimmed, ';');
-    if (semicolon) {
-        *semicolon = '\0';
-        cmd->next_command = strdup_safe(semicolon + 1);
-        trim(cmd->next_command);
+    // Check for logical operators (&&, ||) - check before command chaining
+    char *and_op = strstr(trimmed, "&&");
+    char *or_op = strstr(trimmed, "||");
+    
+    if (and_op && (!or_op || and_op < or_op)) {
+        *and_op = '\0';
+        cmd->logic_op = LOGIC_AND;
+        cmd->next_logic_command = strdup_safe(trim(and_op + 2));
+        trim(cmd->next_logic_command);
+    } else if (or_op) {
+        *or_op = '\0';
+        cmd->logic_op = LOGIC_OR;
+        cmd->next_logic_command = strdup_safe(trim(or_op + 2));
+        trim(cmd->next_logic_command);
+    }
+    
+    // Check for command chaining (;) - only if no logical operators
+    if (cmd->logic_op == LOGIC_NONE) {
+        char *semicolon = strchr(trimmed, ';');
+        if (semicolon) {
+            *semicolon = '\0';
+            cmd->next_command = strdup_safe(semicolon + 1);
+            trim(cmd->next_command);
+        }
     }
     
     // Parse redirections
@@ -79,6 +97,7 @@ void free_command(command_t *cmd) {
     free(cmd->input_redirect);
     free(cmd->output_redirect);
     free(cmd->next_command);
+    free(cmd->next_logic_command);
     free(cmd);
 }
 
@@ -133,6 +152,57 @@ command_t **parse_command_chain(const char *line, int *count) {
 }
 
 void free_command_chain(command_t **commands, int count) {
+    if (!commands) return;
+    
+    for (int i = 0; i < count; i++) {
+        free_command(commands[i]);
+    }
+    free(commands);
+}
+
+command_t **parse_logical_chain(const char *line, int *count) {
+    if (!line || !count) return NULL;
+    
+    char *line_copy = strdup_safe(line);
+    int chain_count;
+    char **commands = split_string(line_copy, "&&", &chain_count);
+    
+    if (!commands) {
+        // Try splitting by ||
+        commands = split_string(line_copy, "||", &chain_count);
+        if (!commands) {
+            free(line_copy);
+            *count = 0;
+            return NULL;
+        }
+    }
+    
+    command_t **parsed_commands = malloc(chain_count * sizeof(command_t *));
+    if (!parsed_commands) {
+        free_string_array(commands);
+        free(line_copy);
+        *count = 0;
+        return NULL;
+    }
+    
+    int valid_count = 0;
+    for (int i = 0; i < chain_count; i++) {
+        trim(commands[i]);
+        if (strlen(commands[i]) > 0) {
+            parsed_commands[valid_count] = parse_command(commands[i]);
+            if (parsed_commands[valid_count]) {
+                valid_count++;
+            }
+        }
+    }
+    
+    free_string_array(commands);
+    free(line_copy);
+    *count = valid_count;
+    return parsed_commands;
+}
+
+void free_logical_chain(command_t **commands, int count) {
     if (!commands) return;
     
     for (int i = 0; i < count; i++) {

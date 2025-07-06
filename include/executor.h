@@ -24,6 +24,12 @@ int execute_external(command_t *cmd);
 // Handle command chaining
 int execute_command_chain(command_t **commands, int count);
 
+// Handle logical operators (&&, ||)
+int execute_logical_chain(command_t **commands, int count);
+
+// Execute command with logical operator
+int execute_with_logical(command_t *cmd);
+
 // Wait for background processes
 void wait_for_background_processes(void);
 

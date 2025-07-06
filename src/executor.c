@@ -231,3 +231,46 @@ void setup_child_signal_handlers(void) {
     signal(SIGTTIN, SIG_DFL);
     signal(SIGTTOU, SIG_DFL);
 }
+
+int execute_with_logical(command_t *cmd) {
+    if (!cmd) return 1;
+    
+    // Execute the current command
+    int status = execute_command(cmd);
+    
+    // If there's a logical operator, handle it
+    if (cmd->logic_op != LOGIC_NONE && cmd->next_logic_command) {
+        command_t *next_cmd = parse_command(cmd->next_logic_command);
+        if (next_cmd) {
+            if (cmd->logic_op == LOGIC_AND) {
+                // && : execute next command only if current command succeeded
+                if (status == 0) {
+                    status = execute_command(next_cmd);
+                }
+            } else if (cmd->logic_op == LOGIC_OR) {
+                // || : execute next command only if current command failed
+                if (status != 0) {
+                    status = execute_command(next_cmd);
+                }
+            }
+            free_command(next_cmd);
+        }
+    }
+    
+    return status;
+}
+
+int execute_logical_chain(command_t **commands, int count) {
+    if (!commands || count <= 0) {
+        return 0;
+    }
+    
+    int last_status = 0;
+    for (int i = 0; i < count; i++) {
+        if (commands[i]) {
+            last_status = execute_with_logical(commands[i]);
+        }
+    }
+    
+    return last_status;
+}

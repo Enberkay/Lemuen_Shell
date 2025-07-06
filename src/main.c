@@ -1,4 +1,4 @@
-// lemuen/src/main.c - Lemuen Shell v0.5
+// lemuen/src/main.c - Lemuen Shell v0.6
 
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -36,14 +36,8 @@ int main() {
 
         command_t *cmd = parse_command(line);
         if (cmd) {
-            if (cmd->input_redirect || cmd->output_redirect) {
-                // Always use execute_command for redirection
-                execute_command(cmd);
-            } else if (is_builtin(cmd)) {
-                run_builtin(cmd);
-            } else {
-                execute_command(cmd);
-            }
+            // Use execute_with_logical to handle && and || operators
+            execute_with_logical(cmd);
             free_command(cmd);
         }
         free(line);
