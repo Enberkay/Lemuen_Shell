@@ -15,6 +15,35 @@ int execute_command(command_t *cmd) {
         return 1;
     }
 
+    // Expand environment variables in command arguments
+    expand_env_vars(cmd);
+
+    // Handle command chaining (;)
+    if (cmd->next_command) {
+        int status = execute_single_command(cmd);
+        command_t *next_cmd = parse_command(cmd->next_command);
+        if (next_cmd) {
+            int next_status = execute_command(next_cmd);
+            free_command(next_cmd);
+            return next_status;
+        }
+        return status;
+    }
+
+    // Handle logical operators (&&, ||)
+    if (cmd->logic_op != LOGIC_NONE && cmd->next_logic_command) {
+        return execute_with_logical(cmd);
+    }
+
+    // Execute single command
+    return execute_single_command(cmd);
+}
+
+int execute_single_command(command_t *cmd) {
+    if (!cmd || !cmd->args || cmd->argc == 0) {
+        return 1;
+    }
+
     // Handle background execution
     if (cmd->background) {
         return execute_background(cmd);

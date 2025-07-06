@@ -6,6 +6,9 @@
 // Execute a command
 int execute_command(command_t *cmd);
 
+// Execute a single command (without chaining/logical operators)
+int execute_single_command(command_t *cmd);
+
 // Execute command with redirection
 int execute_with_redirection(command_t *cmd);
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "parser.h"
 
 // Safe string duplication with error handling
 char *strdup_safe(const char *str);
@@ -28,5 +29,9 @@ char *get_current_dir(void);
 // Error handling
 void print_error(const char *format, ...);
 void print_system_error(const char *message);
+
+// Environment variable expansion
+char *expand_env_var_in_string(const char *str);
+void expand_env_vars(command_t *cmd);
 
 #endif // UTILS_H

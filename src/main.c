@@ -36,8 +36,8 @@ int main() {
 
         command_t *cmd = parse_command(line);
         if (cmd) {
-            // Use execute_with_logical to handle && and || operators
-            execute_with_logical(cmd);
+            // Execute command (handles chaining, logical operators, etc.)
+            execute_command(cmd);
             free_command(cmd);
         }
         free(line);

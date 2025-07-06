@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+// Global variable to store previous directory
+static char *previous_dir = NULL;
+
 // Builtin command implementations
 static int builtin_cd_impl(command_t *cmd);
 static int builtin_exit_impl(command_t *cmd);
@@ -67,24 +70,44 @@ static int builtin_cd_impl(command_t *cmd) {
             return 1;
         }
     } else if (cmd->argc == 2) {
-        target_dir = cmd->args[1];
+        if (strcmp(cmd->args[1], "-") == 0) {
+            // cd - : go to previous directory
+            if (!previous_dir) {
+                print_error("cd: no previous directory");
+                return 1;
+            }
+            target_dir = previous_dir;
+        } else {
+            target_dir = cmd->args[1];
+        }
     } else {
         print_error("cd: too many arguments");
         return 1;
     }
     
+    // Get current directory before changing
+    char *current_dir = get_current_dir();
+    
     // Expand tilde if present
     char *expanded_dir = expand_tilde(target_dir);
     if (!expanded_dir) {
         print_error("cd: failed to expand path");
+        free(current_dir);
         return 1;
     }
     
     if (chdir(expanded_dir) != 0) {
         print_system_error("cd: failed to change directory");
         free(expanded_dir);
+        free(current_dir);
         return 1;
     }
+    
+    // Update previous directory
+    if (previous_dir) {
+        free(previous_dir);
+    }
+    previous_dir = current_dir;
     
     free(expanded_dir);
     return 0;
