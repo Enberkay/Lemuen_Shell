@@ -11,7 +11,7 @@ typedef enum {
 } logic_operator_t;
 
 // Command structure to hold parsed command
-typedef struct {
+typedef struct command {
     char **args;           // Array of arguments
     int argc;              // Number of arguments
     char *input_redirect;  // Input redirection file
@@ -21,6 +21,7 @@ typedef struct {
     int background;        // Whether to run in background (&)
     logic_operator_t logic_op;  // Logical operator (&&, ||)
     char *next_logic_command;   // Next command after logical operator
+    struct command *next_pipe;  // Next command in pipeline (|)
 } command_t;
 
 // Parse a command line string into command_t structure

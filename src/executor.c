@@ -40,8 +40,13 @@ int execute_command(command_t *cmd) {
 }
 
 int execute_single_command(command_t *cmd) {
-    if (!cmd || !cmd->args || cmd->argc == 0) {
+    if (!cmd) {
         return 1;
+    }
+    
+    // Handle empty command
+    if (!cmd->args || cmd->argc == 0) {
+        return 0;  // Empty command succeeds
     }
 
     // Handle background execution
@@ -264,8 +269,8 @@ void setup_child_signal_handlers(void) {
 int execute_with_logical(command_t *cmd) {
     if (!cmd) return 1;
     
-    // Execute the current command
-    int status = execute_command(cmd);
+    // Execute the current command (without logical operators to avoid recursion)
+    int status = execute_single_command(cmd);
     
     // If there's a logical operator, handle it
     if (cmd->logic_op != LOGIC_NONE && cmd->next_logic_command) {
@@ -274,15 +279,25 @@ int execute_with_logical(command_t *cmd) {
             if (cmd->logic_op == LOGIC_AND) {
                 // && : execute next command only if current command succeeded
                 if (status == 0) {
-                    status = execute_command(next_cmd);
+                    status = execute_single_command(next_cmd);
                 }
             } else if (cmd->logic_op == LOGIC_OR) {
                 // || : execute next command only if current command failed
                 if (status != 0) {
-                    status = execute_command(next_cmd);
+                    status = execute_single_command(next_cmd);
                 }
             }
             free_command(next_cmd);
+        }
+    }
+    
+    // Handle command chaining after logical operators
+    if (cmd->next_command) {
+        command_t *chain_cmd = parse_command(cmd->next_command);
+        if (chain_cmd) {
+            int chain_status = execute_command(chain_cmd);
+            free_command(chain_cmd);
+            return chain_status;
         }
     }
     
