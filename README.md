@@ -1,4 +1,4 @@
-# Lemuen Shell v0.6
+# Lemuen Shell v0.7
 
 **A lightweight shell implementation written in C, designed for educational purposes and understanding shell internals.**
 
@@ -6,7 +6,7 @@
 
 Lemuen Shell is a command-line interpreter that provides a subset of POSIX shell functionality. It serves as both a learning tool for understanding shell architecture and a functional command-line environment.
 
-## Current Features (v0.6)
+## Current Features (v0.7)
 
 ### Core Functionality
 - **Interactive Shell**: Command-line interface with colored prompt
@@ -16,6 +16,9 @@ Lemuen Shell is a command-line interpreter that provides a subset of POSIX shell
 - **I/O Redirection**: Input (`<`), output (`>`, `>>`) redirection
 - **Background Execution**: Process execution with `&` operator
 - **Command Chaining**: Sequential execution with `;` separator
+- **Logical Operators**: Conditional execution with `&&` (AND) and `||` (OR)
+- **Environment Variable Expansion**: Support for `$VAR` and `${VAR}` syntax
+- **Enhanced Error Handling**: Comprehensive error messages and status codes
 - **Signal Handling**: Proper handling of SIGINT (Ctrl+C)
 - **Memory Management**: Leak-free implementation with proper cleanup
 
@@ -57,10 +60,20 @@ lemuen> echo "More" >> file.txt    # Append to file
 lemuen> cat < file.txt             # Input redirection
 ```
 
+### Environment Variable Examples
+```bash
+lemuen> export TESTVAR=hello       # Set environment variable
+lemuen> echo $TESTVAR              # Expand variable
+lemuen> echo ${TESTVAR}            # Expand with braces
+lemuen> unset TESTVAR              # Remove variable
+```
+
 ### Process Control
 ```bash
 lemuen> sleep 10 &           # Execute in background
 lemuen> ls; pwd; echo done   # Sequential command execution
+lemuen> echo success && echo 'AND works'  # Conditional execution (AND)
+lemuen> cd nonexistent || echo 'OR works' # Conditional execution (OR)
 ```
 
 ## Project Structure
@@ -192,11 +205,6 @@ make cppcheck      # Run static analysis
 
 ## Roadmap
 
-### Version 0.7
-- Logical operators (`&&`, `||`)
-- Environment variable expansion (`$VAR`)
-- Enhanced error handling
-
 ### Version 0.8
 - Globbing support (`*`, `?`, `[]`)
 - Enhanced path expansion
@@ -244,4 +252,4 @@ This project is provided as-is for educational purposes. Use at your own discret
 
 ---
 
-**Lemuen Shell v0.6** - A functional shell implementation demonstrating core shell concepts and system programming principles. 
+**Lemuen Shell v0.7** - A functional shell implementation demonstrating core shell concepts and system programming principles. 

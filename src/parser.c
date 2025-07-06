@@ -10,34 +10,24 @@ command_t *parse_command(const char *line) {
         return NULL;
     }
     
-    // 1. Pipeline split (|)
+    // 1. Check for logical operators first (before pipeline split)
     char *line_copy = strdup_safe(line);
-    char *pipe_saveptr = NULL;
-    char *pipe_token = strtok_r(line_copy, "|", &pipe_saveptr);
-    command_t *first_cmd = NULL;
-    command_t *last_cmd = NULL;
-    while (pipe_token) {
-        // Parse each segment as a single command (no pipeline)
+    char *trimmed = trim(line_copy);
+    
+    // Check for logical operators (&&, ||) - check before pipeline split
+    char *and_op = strstr(trimmed, "&&");
+    char *or_op = strstr(trimmed, "||");
+    
+
+    
+    if (and_op || or_op) {
+        // Handle logical operators
         command_t *cmd = calloc(1, sizeof(command_t));
         if (!cmd) {
             print_error("Failed to allocate command structure");
-            if (first_cmd) free_command(first_cmd);
             free(line_copy);
             return NULL;
         }
-        char *trimmed = trim(pipe_token);
-        
-        // Check for background execution
-        int len = strlen(trimmed);
-        if (len > 0 && trimmed[len-1] == '&') {
-            cmd->background = 1;
-            trimmed[len-1] = '\0';
-            trim(trimmed);
-        }
-        
-        // Check for logical operators (&&, ||) - check before command chaining
-        char *and_op = strstr(trimmed, "&&");
-        char *or_op = strstr(trimmed, "||");
         
         if (and_op && (!or_op || and_op < or_op)) {
             *and_op = '\0';
@@ -69,6 +59,90 @@ command_t *parse_command(const char *line) {
                 cmd->next_logic_command = strdup_safe(trim(next_part));
             }
             free(next_part);
+        }
+        
+        // Parse the first part of the logical operator
+        char *first_part = trim(trimmed);
+        
+        // Check for background execution
+        int len = strlen(first_part);
+        if (len > 0 && first_part[len-1] == '&') {
+            cmd->background = 1;
+            first_part[len-1] = '\0';
+            trim(first_part);
+        }
+        
+        // Check for command chaining (;) - only if no logical operators
+        if (cmd->logic_op == LOGIC_NONE) {
+            char *semicolon = strchr(first_part, ';');
+            if (semicolon) {
+                *semicolon = '\0';
+                cmd->next_command = strdup_safe(semicolon + 1);
+                trim(cmd->next_command);
+            }
+        }
+        
+        // Parse redirections
+        char *input_redir = strstr(first_part, "<");
+        char *output_redir = strstr(first_part, ">");
+        char *append_redir = strstr(first_part, ">>");
+        
+        if (input_redir) {
+            *input_redir = '\0';
+            cmd->input_redirect = strdup_safe(trim(input_redir + 1));
+        }
+        
+        if (append_redir) {
+            *append_redir = '\0';
+            cmd->output_redirect = strdup_safe(trim(append_redir + 2));
+            cmd->append_output = 1;
+        } else if (output_redir) {
+            *output_redir = '\0';
+            cmd->output_redirect = strdup_safe(trim(output_redir + 1));
+            cmd->append_output = 0;
+        }
+        
+        // Parse arguments
+        trim(first_part);
+        if (strlen(first_part) > 0) {
+            int arg_count;
+            char **args = split_string(first_part, " \t", &arg_count);
+            if (args) {
+                cmd->args = args;
+                cmd->argc = arg_count;
+            }
+        } else {
+            // Empty command after parsing - set default values
+            cmd->args = NULL;
+            cmd->argc = 0;
+        }
+        
+        free(line_copy);
+        return cmd;
+    }
+    
+    // 2. Pipeline split (|) - only if no logical operators
+    char *pipe_saveptr = NULL;
+    char *pipe_token = strtok_r(line_copy, "|", &pipe_saveptr);
+    command_t *first_cmd = NULL;
+    command_t *last_cmd = NULL;
+    while (pipe_token) {
+        // Parse each segment as a single command (no pipeline)
+        command_t *cmd = calloc(1, sizeof(command_t));
+        if (!cmd) {
+            print_error("Failed to allocate command structure");
+            if (first_cmd) free_command(first_cmd);
+            free(line_copy);
+            return NULL;
+        }
+        char *trimmed = trim(pipe_token);
+        
+        // Check for background execution
+        int len = strlen(trimmed);
+        if (len > 0 && trimmed[len-1] == '&') {
+            cmd->background = 1;
+            trimmed[len-1] = '\0';
+            trim(trimmed);
         }
         
         // Check for command chaining (;) - only if no logical operators

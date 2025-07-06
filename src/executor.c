@@ -49,6 +49,9 @@ int execute_single_command(command_t *cmd) {
         return 0;  // Empty command succeeds
     }
 
+    // Expand environment variables in command arguments
+    expand_env_vars(cmd);
+
     // Handle background execution
     if (cmd->background) {
         return execute_background(cmd);
@@ -272,6 +275,8 @@ int execute_with_logical(command_t *cmd) {
     // Execute the current command (without logical operators to avoid recursion)
     int status = execute_single_command(cmd);
     
+
+    
     // If there's a logical operator, handle it
     if (cmd->logic_op != LOGIC_NONE && cmd->next_logic_command) {
         command_t *next_cmd = parse_command(cmd->next_logic_command);
@@ -279,12 +284,12 @@ int execute_with_logical(command_t *cmd) {
             if (cmd->logic_op == LOGIC_AND) {
                 // && : execute next command only if current command succeeded
                 if (status == 0) {
-                    status = execute_single_command(next_cmd);
+                    status = execute_command(next_cmd);
                 }
             } else if (cmd->logic_op == LOGIC_OR) {
                 // || : execute next command only if current command failed
                 if (status != 0) {
-                    status = execute_single_command(next_cmd);
+                    status = execute_command(next_cmd);
                 }
             }
             free_command(next_cmd);
