@@ -17,6 +17,12 @@
 #define PROMPT_COLOR "\001\033[1;36m\002"  // Cyan bold
 #define RESET_COLOR  "\001\033[0m\002"
 
+/**
+ * handle_sigint - Signal handler for SIGINT (Ctrl+C).
+ * @sig: Signal number.
+ *
+ * Resets the prompt line and redisplays it.
+ */
 void handle_sigint(int sig) {
     (void)sig;
     write(STDOUT_FILENO, "\n", 1);
@@ -25,6 +31,12 @@ void handle_sigint(int sig) {
     rl_redisplay();
 }
 
+/**
+ * main - Entry point for Lemuen Shell.
+ *
+ * Initializes signal handling, readline, and runs the main shell loop.
+ * Returns: Exit status code.
+ */
 int main() {
     signal(SIGINT, handle_sigint);
 

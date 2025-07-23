@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * parse_command - Parse a command line string into a command_t structure.
+ * @line: Input command line.
+ *
+ * Handles logical operators, pipelines, redirection, background, and argument splitting.
+ * Returns: Pointer to parsed command_t, or NULL on error.
+ */
 command_t *parse_command(const char *line) {
     if (!line || is_empty_command(line)) {
         return NULL;
@@ -202,6 +209,10 @@ command_t *parse_command(const char *line) {
     return first_cmd;
 }
 
+/**
+ * free_command - Free all memory associated with a command_t structure.
+ * @cmd: Command to free.
+ */
 void free_command(command_t *cmd) {
     if (!cmd) return;
     
@@ -216,6 +227,12 @@ void free_command(command_t *cmd) {
     free(cmd);
 }
 
+/**
+ * is_empty_command - Check if a command line is empty or whitespace only.
+ * @line: Input string.
+ *
+ * Returns: 1 if empty, 0 otherwise.
+ */
 int is_empty_command(const char *line) {
     if (!line) return 1;
     
@@ -228,6 +245,13 @@ int is_empty_command(const char *line) {
     return 1;
 }
 
+/**
+ * parse_command_chain - Parse a chain of commands separated by ';'.
+ * @line: Input command line.
+ * @count: Output pointer for number of commands.
+ *
+ * Returns: Array of command_t pointers.
+ */
 command_t **parse_command_chain(const char *line, int *count) {
     if (!line || !count) return NULL;
     
@@ -266,6 +290,11 @@ command_t **parse_command_chain(const char *line, int *count) {
     return parsed_commands;
 }
 
+/**
+ * free_command_chain - Free an array of command_t pointers.
+ * @commands: Array to free.
+ * @count: Number of commands.
+ */
 void free_command_chain(command_t **commands, int count) {
     if (!commands) return;
     
@@ -275,6 +304,13 @@ void free_command_chain(command_t **commands, int count) {
     free(commands);
 }
 
+/**
+ * parse_logical_chain - Parse a chain of commands separated by '&&' or '||'.
+ * @line: Input command line.
+ * @count: Output pointer for number of commands.
+ *
+ * Returns: Array of command_t pointers.
+ */
 command_t **parse_logical_chain(const char *line, int *count) {
     if (!line || !count) return NULL;
     
@@ -317,6 +353,11 @@ command_t **parse_logical_chain(const char *line, int *count) {
     return parsed_commands;
 }
 
+/**
+ * free_logical_chain - Free an array of command_t pointers for logical chains.
+ * @commands: Array to free.
+ * @count: Number of commands.
+ */
 void free_logical_chain(command_t **commands, int count) {
     if (!commands) return;
     

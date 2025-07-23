@@ -8,6 +8,12 @@
 #include <unistd.h>
 #include <ctype.h>
 
+/**
+ * strdup_safe - Duplicate a string with error checking.
+ * @str: Input string to duplicate.
+ *
+ * Returns: Newly allocated duplicate string, or exits on failure.
+ */
 char *strdup_safe(const char *str) {
     if (!str) return NULL;
     char *dup = strdup(str);
@@ -18,6 +24,12 @@ char *strdup_safe(const char *str) {
     return dup;
 }
 
+/**
+ * trim_left - Remove leading whitespace from a string (in place).
+ * @str: String to trim.
+ *
+ * Returns: Pointer to the first non-whitespace character.
+ */
 char *trim_left(char *str) {
     if (!str) return NULL;
     
@@ -27,6 +39,12 @@ char *trim_left(char *str) {
     return str;
 }
 
+/**
+ * trim_right - Remove trailing whitespace from a string (in place).
+ * @str: String to trim.
+ *
+ * Returns: Pointer to the trimmed string.
+ */
 char *trim_right(char *str) {
     if (!str) return NULL;
     
@@ -38,12 +56,26 @@ char *trim_right(char *str) {
     return str;
 }
 
+/**
+ * trim - Remove leading and trailing whitespace from a string (in place).
+ * @str: String to trim.
+ *
+ * Returns: Pointer to the trimmed string.
+ */
 char *trim(char *str) {
     if (!str) return NULL;
     str = trim_left(str);
     return trim_right(str);
 }
 
+/**
+ * split_string - Split a string into tokens by delimiter.
+ * @str: Input string.
+ * @delim: Delimiter characters.
+ * @count: Output pointer for number of tokens.
+ *
+ * Returns: NULL-terminated array of strings (tokens). Caller must free.
+ */
 char **split_string(const char *str, const char *delim, int *count) {
     if (!str || !delim || !count) return NULL;
     
@@ -94,6 +126,10 @@ char **split_string(const char *str, const char *delim, int *count) {
     return tokens;
 }
 
+/**
+ * free_string_array - Free a NULL-terminated array of strings.
+ * @array: Array to free.
+ */
 void free_string_array(char **array) {
     if (!array) return;
     
@@ -103,11 +139,22 @@ void free_string_array(char **array) {
     free(array);
 }
 
+/**
+ * get_env_var - Get the value of an environment variable.
+ * @name: Variable name.
+ *
+ * Returns: Value string or NULL if not found.
+ */
 char *get_env_var(const char *name) {
     if (!name) return NULL;
     return getenv(name);
 }
 
+/**
+ * set_env_var - Set or unset an environment variable.
+ * @name: Variable name.
+ * @value: Value to set, or NULL to unset.
+ */
 void set_env_var(const char *name, const char *value) {
     if (!name) return;
     
@@ -118,6 +165,12 @@ void set_env_var(const char *name, const char *value) {
     }
 }
 
+/**
+ * expand_tilde - Expand ~ to home directory in a path string.
+ * @path: Input path.
+ *
+ * Returns: Newly allocated expanded path string.
+ */
 char *expand_tilde(const char *path) {
     if (!path || path[0] != '~') {
         return strdup_safe(path);
@@ -144,6 +197,11 @@ char *expand_tilde(const char *path) {
     return strdup_safe(path);
 }
 
+/**
+ * get_current_dir - Get the current working directory.
+ *
+ * Returns: Newly allocated string with current directory path.
+ */
 char *get_current_dir(void) {
     char *cwd = getcwd(NULL, 0);
     if (!cwd) {
@@ -153,6 +211,11 @@ char *get_current_dir(void) {
     return cwd;
 }
 
+/**
+ * print_error - Print a formatted error message to stderr (in red).
+ * @format: printf-style format string.
+ * @...: Arguments.
+ */
 void print_error(const char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -162,11 +225,20 @@ void print_error(const char *format, ...) {
     va_end(args);
 }
 
+/**
+ * print_system_error - Print a system error message with strerror.
+ * @message: Custom message to print before system error.
+ */
 void print_system_error(const char *message) {
     print_error("%s: %s", message, strerror(errno));
 }
 
-// Expand environment variables in a string
+/**
+ * expand_env_var_in_string - Expand environment variables in a string.
+ * @str: Input string (may contain $VAR or ${VAR}).
+ *
+ * Returns: Newly allocated string with variables expanded.
+ */
 char *expand_env_var_in_string(const char *str) {
     if (!str) return NULL;
     
@@ -269,7 +341,10 @@ char *expand_env_var_in_string(const char *str) {
     return result;
 }
 
-// Expand environment variables in command arguments
+/**
+ * expand_env_vars - Expand environment variables in all command arguments.
+ * @cmd: Command structure to process.
+ */
 void expand_env_vars(command_t *cmd) {
     if (!cmd || !cmd->args) return;
     

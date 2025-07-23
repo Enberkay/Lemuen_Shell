@@ -10,6 +10,13 @@
 #include <fcntl.h>
 #include <signal.h>
 
+/**
+ * execute_command - Entry point for executing a parsed command structure.
+ * @cmd: Command to execute.
+ *
+ * Handles chaining, logical operators, and delegates to single command execution.
+ * Returns: Exit status code.
+ */
 int execute_command(command_t *cmd) {
     if (!cmd || !cmd->args || cmd->argc == 0) {
         return 1;
@@ -39,6 +46,13 @@ int execute_command(command_t *cmd) {
     return execute_single_command(cmd);
 }
 
+/**
+ * execute_single_command - Execute a single command (builtin or external).
+ * @cmd: Command to execute.
+ *
+ * Handles background execution, redirection, and builtin/external distinction.
+ * Returns: Exit status code.
+ */
 int execute_single_command(command_t *cmd) {
     if (!cmd) {
         return 1;
@@ -69,6 +83,13 @@ int execute_single_command(command_t *cmd) {
     return execute_external(cmd);
 }
 
+/**
+ * execute_with_redirection - Execute a command with I/O redirection in a child process.
+ * @cmd: Command to execute.
+ *
+ * Handles input/output file redirection and executes builtin or external command.
+ * Returns: Exit status code.
+ */
 int execute_with_redirection(command_t *cmd) {
     pid_t pid = fork();
     
@@ -131,6 +152,13 @@ int execute_with_redirection(command_t *cmd) {
     }
 }
 
+/**
+ * execute_background - Execute a command in the background (asynchronously).
+ * @cmd: Command to execute.
+ *
+ * Forks a new process group and does not wait for completion.
+ * Returns: 0 on success, 1 on error.
+ */
 int execute_background(command_t *cmd) {
     pid_t pid = fork();
     
@@ -157,6 +185,12 @@ int execute_background(command_t *cmd) {
     }
 }
 
+/**
+ * find_command - Search for an executable in PATH or as a direct path.
+ * @command: Command name or path.
+ *
+ * Returns: Newly allocated string with full path, or NULL if not found.
+ */
 char *find_command(const char *command) {
     if (!command) return NULL;
     
@@ -197,6 +231,12 @@ char *find_command(const char *command) {
     return found_path;
 }
 
+/**
+ * is_executable - Check if a file is executable.
+ * @path: Path to check.
+ *
+ * Returns: 1 if executable, 0 otherwise.
+ */
 int is_executable(const char *path) {
     if (!path) return 0;
     
@@ -208,6 +248,13 @@ int is_executable(const char *path) {
     return S_ISREG(st.st_mode) && (st.st_mode & S_IXUSR);
 }
 
+/**
+ * execute_external - Execute an external (non-builtin) command.
+ * @cmd: Command to execute.
+ *
+ * Forks and execs the command, waits for completion.
+ * Returns: Exit status code.
+ */
 int execute_external(command_t *cmd) {
     char *command_path = find_command(cmd->args[0]);
     if (!command_path) {
@@ -238,6 +285,13 @@ int execute_external(command_t *cmd) {
     }
 }
 
+/**
+ * execute_command_chain - Execute a chain of commands sequentially.
+ * @commands: Array of command pointers.
+ * @count: Number of commands.
+ *
+ * Returns: Exit status of the last command.
+ */
 int execute_command_chain(command_t **commands, int count) {
     if (!commands || count <= 0) {
         return 0;
@@ -253,6 +307,9 @@ int execute_command_chain(command_t **commands, int count) {
     return last_status;
 }
 
+/**
+ * wait_for_background_processes - Reap all finished background processes.
+ */
 void wait_for_background_processes(void) {
     int status;
     while (waitpid(-1, &status, WNOHANG) > 0) {
@@ -260,6 +317,9 @@ void wait_for_background_processes(void) {
     }
 }
 
+/**
+ * setup_child_signal_handlers - Reset signal handlers in child process to default.
+ */
 void setup_child_signal_handlers(void) {
     // Reset signal handlers for child processes
     signal(SIGINT, SIG_DFL);
@@ -269,6 +329,12 @@ void setup_child_signal_handlers(void) {
     signal(SIGTTOU, SIG_DFL);
 }
 
+/**
+ * execute_with_logical - Execute a command with logical operators (&&, ||).
+ * @cmd: Command to execute.
+ *
+ * Returns: Exit status code.
+ */
 int execute_with_logical(command_t *cmd) {
     if (!cmd) return 1;
     
@@ -309,6 +375,13 @@ int execute_with_logical(command_t *cmd) {
     return status;
 }
 
+/**
+ * execute_logical_chain - Execute a chain of commands with logical operators.
+ * @commands: Array of command pointers.
+ * @count: Number of commands.
+ *
+ * Returns: Exit status of the last command.
+ */
 int execute_logical_chain(command_t **commands, int count) {
     if (!commands || count <= 0) {
         return 0;

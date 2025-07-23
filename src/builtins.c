@@ -30,6 +30,12 @@ static const builtin_t builtins[] = {
     {NULL, NULL, NULL}  // Sentinel
 };
 
+/**
+ * is_builtin - Check if a command is a builtin command.
+ * @cmd: Command to check.
+ *
+ * Returns: 1 if builtin, 0 otherwise.
+ */
 int is_builtin(command_t *cmd) {
     if (!cmd || !cmd->args || cmd->argc == 0) {
         return 0;
@@ -44,6 +50,12 @@ int is_builtin(command_t *cmd) {
     return 0;
 }
 
+/**
+ * run_builtin - Execute a builtin command.
+ * @cmd: Command to execute.
+ *
+ * Returns: Exit status code.
+ */
 int run_builtin(command_t *cmd) {
     if (!cmd || !cmd->args || cmd->argc == 0) {
         return 1;
@@ -59,6 +71,12 @@ int run_builtin(command_t *cmd) {
     return 1;  // Not found
 }
 
+/**
+ * builtin_cd_impl - Implementation of the 'cd' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code.
+ */
 static int builtin_cd_impl(command_t *cmd) {
     const char *target_dir = NULL;
     
@@ -113,6 +131,12 @@ static int builtin_cd_impl(command_t *cmd) {
     return 0;
 }
 
+/**
+ * builtin_exit_impl - Implementation of the 'exit' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code (does not return).
+ */
 static int builtin_exit_impl(command_t *cmd) {
     int exit_code = 0;
     
@@ -127,6 +151,12 @@ static int builtin_exit_impl(command_t *cmd) {
     exit(exit_code);
 }
 
+/**
+ * builtin_pwd_impl - Implementation of the 'pwd' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code.
+ */
 static int builtin_pwd_impl(command_t *cmd) {
     (void)cmd;  // Unused parameter
     
@@ -139,6 +169,12 @@ static int builtin_pwd_impl(command_t *cmd) {
     return 1;
 }
 
+/**
+ * builtin_echo_impl - Implementation of the 'echo' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code.
+ */
 static int builtin_echo_impl(command_t *cmd) {
     for (int i = 1; i < cmd->argc; i++) {
         if (i > 1) write(STDOUT_FILENO, " ", 1);
@@ -150,6 +186,12 @@ static int builtin_echo_impl(command_t *cmd) {
     return 0;
 }
 
+/**
+ * builtin_help_impl - Implementation of the 'help' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code.
+ */
 static int builtin_help_impl(command_t *cmd) {
     if (cmd->argc == 1) {
         printf("Lemuen Shell v0.5 - Available builtin commands:\n");
@@ -175,6 +217,12 @@ static int builtin_help_impl(command_t *cmd) {
     return 0;
 }
 
+/**
+ * builtin_export_impl - Implementation of the 'export' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code.
+ */
 static int builtin_export_impl(command_t *cmd) {
     if (cmd->argc != 2) {
         print_error("export: usage: export name=value");
@@ -206,6 +254,12 @@ static int builtin_export_impl(command_t *cmd) {
     return 0;
 }
 
+/**
+ * builtin_unset_impl - Implementation of the 'unset' builtin command.
+ * @cmd: Command structure.
+ *
+ * Returns: Exit status code.
+ */
 static int builtin_unset_impl(command_t *cmd) {
     if (cmd->argc != 2) {
         print_error("unset: usage: unset name");
@@ -216,10 +270,20 @@ static int builtin_unset_impl(command_t *cmd) {
     return 0;
 }
 
+/**
+ * get_builtins - Get the builtin commands table.
+ *
+ * Returns: Pointer to builtin_t array.
+ */
 const builtin_t *get_builtins(void) {
     return builtins;
 }
 
+/**
+ * get_builtin_count - Get the number of builtin commands.
+ *
+ * Returns: Number of builtins.
+ */
 int get_builtin_count(void) {
     int count = 0;
     while (builtins[count].name) {
