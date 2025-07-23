@@ -194,7 +194,7 @@ static int builtin_echo_impl(command_t *cmd) {
  */
 static int builtin_help_impl(command_t *cmd) {
     if (cmd->argc == 1) {
-        printf("Lemuen Shell v0.5 - Available builtin commands:\n");
+        printf("Lemuen Shell v0.7 - Available builtin commands:\n");
         printf("==============================================\n");
         for (int i = 0; builtins[i].name; i++) {
             printf("  %s\n", builtins[i].help);
