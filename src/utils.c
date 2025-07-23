@@ -69,60 +69,52 @@ char *trim(char *str) {
 }
 
 /**
- * split_string - Split a string into tokens by delimiter.
- * @str: Input string.
+ * split_string - Split a string into tokens by delimiter (in-place, efficient).
+ * @str: Input string (will be copied and modified).
  * @delim: Delimiter characters.
  * @count: Output pointer for number of tokens.
  *
- * Returns: NULL-terminated array of strings (tokens). Caller must free.
+ * Returns: NULL-terminated array of pointers to tokens (in a single buffer).
+ *          Caller must free the returned array and the buffer (tokens[0]).
  */
 char **split_string(const char *str, const char *delim, int *count) {
     if (!str || !delim || !count) return NULL;
-    
-    char *str_copy = strdup_safe(str);
-    char *token;
-    char **tokens = NULL;
-    int capacity = 16; // Start with a larger initial capacity
+    char *buffer = strdup_safe(str);
+    int capacity = 16;
     int size = 0;
-    
-    tokens = malloc(capacity * sizeof(char *));
+    char **tokens = malloc(capacity * sizeof(char *));
     if (!tokens) {
-        free(str_copy);
+        free(buffer);
         return NULL;
     }
-    
-    token = strtok(str_copy, delim);
+    char *saveptr = NULL;
+    char *token = strtok_r(buffer, delim, &saveptr);
     while (token) {
         if (size >= capacity) {
-            capacity *= 2; // Exponential growth
+            capacity *= 2;
             char **new_tokens = realloc(tokens, capacity * sizeof(char *));
             if (!new_tokens) {
-                free_string_array(tokens);
-                free(str_copy);
+                free(tokens);
+                free(buffer);
                 return NULL;
             }
             tokens = new_tokens;
         }
-        
-        tokens[size++] = strdup_safe(token);
-        token = strtok(NULL, delim);
+        tokens[size++] = token;
+        token = strtok_r(NULL, delim, &saveptr);
     }
-    
-    // Null-terminate the array
     if (size >= capacity) {
-        capacity += 1;
+        capacity++;
         char **new_tokens = realloc(tokens, capacity * sizeof(char *));
         if (!new_tokens) {
-            free_string_array(tokens);
-            free(str_copy);
+            free(tokens);
+            free(buffer);
             return NULL;
         }
         tokens = new_tokens;
     }
     tokens[size] = NULL;
-    
     *count = size;
-    free(str_copy);
     return tokens;
 }
 
@@ -137,6 +129,16 @@ void free_string_array(char **array) {
         free(array[i]);
     }
     free(array);
+}
+
+/**
+ * free_split_string - Free the array and buffer returned by split_string.
+ * @tokens: Array to free.
+ */
+void free_split_string(char **tokens) {
+    if (!tokens) return;
+    free(tokens[0]); // buffer
+    free(tokens);
 }
 
 /**
