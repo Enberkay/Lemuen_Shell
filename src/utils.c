@@ -50,7 +50,7 @@ char **split_string(const char *str, const char *delim, int *count) {
     char *str_copy = strdup_safe(str);
     char *token;
     char **tokens = NULL;
-    int capacity = 10;
+    int capacity = 16; // Start with a larger initial capacity
     int size = 0;
     
     tokens = malloc(capacity * sizeof(char *));
@@ -62,7 +62,7 @@ char **split_string(const char *str, const char *delim, int *count) {
     token = strtok(str_copy, delim);
     while (token) {
         if (size >= capacity) {
-            capacity *= 2;
+            capacity *= 2; // Exponential growth
             char **new_tokens = realloc(tokens, capacity * sizeof(char *));
             if (!new_tokens) {
                 free_string_array(tokens);
@@ -170,7 +170,8 @@ void print_system_error(const char *message) {
 char *expand_env_var_in_string(const char *str) {
     if (!str) return NULL;
     
-    char *result = malloc(1);
+    size_t bufsize = 64;
+    char *result = malloc(bufsize);
     if (!result) return NULL;
     result[0] = '\0';
     size_t result_len = 0;
@@ -178,92 +179,93 @@ char *expand_env_var_in_string(const char *str) {
     const char *p = str;
     while (*p) {
         if (*p == '$' && (p == str || *(p-1) != '\\')) {
-            // Found $, check if it's an environment variable
-            p++; // Skip $
-            
+            p++;
             if (*p == '{') {
-                // ${VAR} format
-                p++; // Skip {
+                p++;
                 const char *var_start = p;
                 while (*p && *p != '}') p++;
-                
                 if (*p == '}') {
                     int var_len = p - var_start;
                     char *var_name = malloc(var_len + 1);
                     if (var_name) {
                         strncpy(var_name, var_start, var_len);
                         var_name[var_len] = '\0';
-                        
                         const char *var_value = getenv(var_name);
                         if (var_value) {
                             size_t value_len = strlen(var_value);
-                            char *new_result = realloc(result, result_len + value_len + 1);
-                            if (new_result) {
+                            if (result_len + value_len + 1 > bufsize) {
+                                while (result_len + value_len + 1 > bufsize) bufsize *= 2;
+                                char *new_result = realloc(result, bufsize);
+                                if (!new_result) { free(result); free(var_name); return NULL; }
                                 result = new_result;
-                                strcpy(result + result_len, var_value);
-                                result_len += value_len;
                             }
+                            strcpy(result + result_len, var_value);
+                            result_len += value_len;
                         }
                         free(var_name);
                     }
                     p++; // Skip }
-                } else {
-                    // Invalid ${ format, keep original
-                    char *new_result = realloc(result, result_len + 2);
-                    if (new_result) {
-                        result = new_result;
-                        result[result_len++] = '$';
-                        result[result_len++] = '{';
-                        result[result_len] = '\0';
-                    }
-                    p = var_start - 1; // Go back to before {
+                    continue;
                 }
+                // Invalid ${ format, treat as literal
+                if (result_len + 2 > bufsize) {
+                    bufsize *= 2;
+                    char *new_result = realloc(result, bufsize);
+                    if (!new_result) { free(result); return NULL; }
+                    result = new_result;
+                }
+                result[result_len++] = '$';
+                result[result_len++] = '{';
+                result[result_len] = '\0';
+                p = var_start - 1;
             } else if (isalnum(*p) || *p == '_') {
-                // $VAR format
                 const char *var_start = p;
                 while (*p && (isalnum(*p) || *p == '_')) p++;
-                
                 int var_len = p - var_start;
                 char *var_name = malloc(var_len + 1);
                 if (var_name) {
                     strncpy(var_name, var_start, var_len);
                     var_name[var_len] = '\0';
-                    
                     const char *var_value = getenv(var_name);
                     if (var_value) {
                         size_t value_len = strlen(var_value);
-                        char *new_result = realloc(result, result_len + value_len + 1);
-                        if (new_result) {
+                        if (result_len + value_len + 1 > bufsize) {
+                            while (result_len + value_len + 1 > bufsize) bufsize *= 2;
+                            char *new_result = realloc(result, bufsize);
+                            if (!new_result) { free(result); free(var_name); return NULL; }
                             result = new_result;
-                            strcpy(result + result_len, var_value);
-                            result_len += value_len;
                         }
+                        strcpy(result + result_len, var_value);
+                        result_len += value_len;
                     }
                     free(var_name);
                 }
-                p--; // Go back one character since we'll increment in the loop
+                continue;
             } else {
                 // Just a $, keep it
-                char *new_result = realloc(result, result_len + 2);
-                if (new_result) {
+                if (result_len + 1 + 1 > bufsize) {
+                    bufsize *= 2;
+                    char *new_result = realloc(result, bufsize);
+                    if (!new_result) { free(result); return NULL; }
                     result = new_result;
-                    result[result_len++] = '$';
-                    result[result_len] = '\0';
                 }
-                p--; // Go back one character since we'll increment in the loop
+                result[result_len++] = '$';
+                result[result_len] = '\0';
+                continue;
             }
         } else {
             // Regular character
-            char *new_result = realloc(result, result_len + 2);
-            if (new_result) {
+            if (result_len + 1 + 1 > bufsize) {
+                bufsize *= 2;
+                char *new_result = realloc(result, bufsize);
+                if (!new_result) { free(result); return NULL; }
                 result = new_result;
-                result[result_len++] = *p;
-                result[result_len] = '\0';
             }
+            result[result_len++] = *p;
+            result[result_len] = '\0';
         }
         p++;
     }
-    
     return result;
 }
 
