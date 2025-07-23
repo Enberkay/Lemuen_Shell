@@ -12,36 +12,87 @@
  * Handles logical operators, pipelines, redirection, background, and argument splitting.
  * Returns: Pointer to parsed command_t, or NULL on error.
  */
+// Helper: parse redirection in-place, set fields and null-terminate
+static void parse_redirection(char *cmd_str, command_t *cmd) {
+    // Output append (>>)
+    char *append_redir = strstr(cmd_str, ">>");
+    if (append_redir) {
+        *append_redir = '\0';
+        append_redir += 2;
+        while (*append_redir == ' ' || *append_redir == '\t') append_redir++;
+        cmd->output_redirect = strdup_safe(append_redir);
+        cmd->append_output = 1;
+    } else {
+        // Output overwrite (>), but not >>
+        char *output_redir = strchr(cmd_str, '>');
+        if (output_redir) {
+            *output_redir = '\0';
+            output_redir++;
+            while (*output_redir == ' ' || *output_redir == '\t') output_redir++;
+            cmd->output_redirect = strdup_safe(output_redir);
+            cmd->append_output = 0;
+        }
+    }
+    // Input (<)
+    char *input_redir = strchr(cmd_str, '<');
+    if (input_redir) {
+        *input_redir = '\0';
+        input_redir++;
+        while (*input_redir == ' ' || *input_redir == '\t') input_redir++;
+        cmd->input_redirect = strdup_safe(input_redir);
+    }
+}
+
+// Helper: parse background (&) in-place
+static void parse_background(char *cmd_str, command_t *cmd) {
+    size_t len = strlen(cmd_str);
+    if (len > 0 && cmd_str[len-1] == '&') {
+        cmd->background = 1;
+        cmd_str[len-1] = '\0';
+        // Remove trailing whitespace
+        trim(cmd_str);
+    }
+}
+
+// Helper: parse arguments in-place
+static void parse_args(char *cmd_str, command_t *cmd) {
+    trim(cmd_str);
+    if (strlen(cmd_str) > 0) {
+        int arg_count;
+        char **args = split_string(cmd_str, " \t", &arg_count);
+        if (args) {
+            cmd->args = args;
+            cmd->argc = arg_count;
+        }
+    } else {
+        cmd->args = NULL;
+        cmd->argc = 0;
+    }
+}
+
 command_t *parse_command(const char *line) {
     if (!line || is_empty_command(line)) {
         return NULL;
     }
-    
-    // 1. Check for logical operators first (before pipeline split)
-    char *line_copy = strdup_safe(line);
-    char *trimmed = trim(line_copy);
-    
-    // Check for logical operators (&&, ||) - check before pipeline split
-    char *and_op = strstr(trimmed, "&&");
-    char *or_op = strstr(trimmed, "||");
-    
-
-    
+    // Work on a single buffer for the whole function
+    char *buffer = strdup_safe(line);
+    trim(buffer);
+    // Check for logical operators (&&, ||)
+    char *and_op = strstr(buffer, "&&");
+    char *or_op = strstr(buffer, "||");
     if (and_op || or_op) {
-        // Handle logical operators
         command_t *cmd = calloc(1, sizeof(command_t));
         if (!cmd) {
             print_error("Failed to allocate command structure");
-            free(line_copy);
+            free(buffer);
             return NULL;
         }
-        
         if (and_op && (!or_op || and_op < or_op)) {
             *and_op = '\0';
             cmd->logic_op = LOGIC_AND;
-            char *next_part = strdup_safe(trim(and_op + 2));
-            
-            // Check if next part contains command chaining
+            char *next_part = and_op + 2;
+            trim(next_part);
+            // Check for command chaining
             char *semicolon = strchr(next_part, ';');
             if (semicolon) {
                 *semicolon = '\0';
@@ -50,13 +101,11 @@ command_t *parse_command(const char *line) {
             } else {
                 cmd->next_logic_command = strdup_safe(trim(next_part));
             }
-            free(next_part);
         } else if (or_op) {
             *or_op = '\0';
             cmd->logic_op = LOGIC_OR;
-            char *next_part = strdup_safe(trim(or_op + 2));
-            
-            // Check if next part contains command chaining
+            char *next_part = or_op + 2;
+            trim(next_part);
             char *semicolon = strchr(next_part, ';');
             if (semicolon) {
                 *semicolon = '\0';
@@ -65,138 +114,32 @@ command_t *parse_command(const char *line) {
             } else {
                 cmd->next_logic_command = strdup_safe(trim(next_part));
             }
-            free(next_part);
         }
-        
-        // Parse the first part of the logical operator
-        char *first_part = trim(trimmed);
-        
-        // Check for background execution
-        int len = strlen(first_part);
-        if (len > 0 && first_part[len-1] == '&') {
-            cmd->background = 1;
-            first_part[len-1] = '\0';
-            trim(first_part);
-        }
-        
-        // Check for command chaining (;) - only if no logical operators
-        if (cmd->logic_op == LOGIC_NONE) {
-            char *semicolon = strchr(first_part, ';');
-            if (semicolon) {
-                *semicolon = '\0';
-                cmd->next_command = strdup_safe(semicolon + 1);
-                trim(cmd->next_command);
-            }
-        }
-        
-        // Parse redirections
-        char *input_redir = strstr(first_part, "<");
-        char *output_redir = strstr(first_part, ">");
-        char *append_redir = strstr(first_part, ">>");
-        
-        if (input_redir) {
-            *input_redir = '\0';
-            cmd->input_redirect = strdup_safe(trim(input_redir + 1));
-        }
-        
-        if (append_redir) {
-            *append_redir = '\0';
-            cmd->output_redirect = strdup_safe(trim(append_redir + 2));
-            cmd->append_output = 1;
-        } else if (output_redir) {
-            *output_redir = '\0';
-            cmd->output_redirect = strdup_safe(trim(output_redir + 1));
-            cmd->append_output = 0;
-        }
-        
-        // Parse arguments
-        trim(first_part);
-        if (strlen(first_part) > 0) {
-            int arg_count;
-            char **args = split_string(first_part, " \t", &arg_count);
-            if (args) {
-                cmd->args = args;
-                cmd->argc = arg_count;
-            }
-        } else {
-            // Empty command after parsing - set default values
-            cmd->args = NULL;
-            cmd->argc = 0;
-        }
-        
-        free(line_copy);
+        // Parse first part (before && or ||)
+        char *first_part = trim(buffer);
+        parse_background(first_part, cmd);
+        parse_redirection(first_part, cmd);
+        parse_args(first_part, cmd);
+        free(buffer);
         return cmd;
     }
-    
-    // 2. Pipeline split (|) - only if no logical operators
+    // Pipeline split (|) - only if no logical operators
     char *pipe_saveptr = NULL;
-    char *pipe_token = strtok_r(line_copy, "|", &pipe_saveptr);
+    char *pipe_token = strtok_r(buffer, "|", &pipe_saveptr);
     command_t *first_cmd = NULL;
     command_t *last_cmd = NULL;
     while (pipe_token) {
-        // Parse each segment as a single command (no pipeline)
         command_t *cmd = calloc(1, sizeof(command_t));
         if (!cmd) {
             print_error("Failed to allocate command structure");
             if (first_cmd) free_command(first_cmd);
-            free(line_copy);
+            free(buffer);
             return NULL;
         }
-        char *trimmed = trim(pipe_token);
-        
-        // Check for background execution
-        int len = strlen(trimmed);
-        if (len > 0 && trimmed[len-1] == '&') {
-            cmd->background = 1;
-            trimmed[len-1] = '\0';
-            trim(trimmed);
-        }
-        
-        // Check for command chaining (;) - only if no logical operators
-        if (cmd->logic_op == LOGIC_NONE) {
-            char *semicolon = strchr(trimmed, ';');
-            if (semicolon) {
-                *semicolon = '\0';
-                cmd->next_command = strdup_safe(semicolon + 1);
-                trim(cmd->next_command);
-            }
-        }
-        
-        // Parse redirections
-        char *input_redir = strstr(trimmed, "<");
-        char *output_redir = strstr(trimmed, ">");
-        char *append_redir = strstr(trimmed, ">>");
-        
-        if (input_redir) {
-            *input_redir = '\0';
-            cmd->input_redirect = strdup_safe(trim(input_redir + 1));
-        }
-        
-        if (append_redir) {
-            *append_redir = '\0';
-            cmd->output_redirect = strdup_safe(trim(append_redir + 2));
-            cmd->append_output = 1;
-        } else if (output_redir) {
-            *output_redir = '\0';
-            cmd->output_redirect = strdup_safe(trim(output_redir + 1));
-            cmd->append_output = 0;
-        }
-        
-        // Parse arguments
-        trim(trimmed);
-        if (strlen(trimmed) > 0) {
-            int arg_count;
-            char **args = split_string(trimmed, " \t", &arg_count);
-            if (args) {
-                cmd->args = args;
-                cmd->argc = arg_count;
-            }
-        } else {
-            // Empty command after parsing - set default values
-            cmd->args = NULL;
-            cmd->argc = 0;
-        }
-        
+        char *segment = trim(pipe_token);
+        parse_background(segment, cmd);
+        parse_redirection(segment, cmd);
+        parse_args(segment, cmd);
         if (!first_cmd) {
             first_cmd = cmd;
         } else {
@@ -205,7 +148,7 @@ command_t *parse_command(const char *line) {
         last_cmd = cmd;
         pipe_token = strtok_r(NULL, "|", &pipe_saveptr);
     }
-    free(line_copy);
+    free(buffer);
     return first_cmd;
 }
 

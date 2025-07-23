@@ -1,5 +1,4 @@
-// lemuen/src/main.c - Lemuen Shell v0.6
-
+// lemuen/src/main.c - Lemuen Shell v0.7
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
