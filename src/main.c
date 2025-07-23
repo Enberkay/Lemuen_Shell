@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <errno.h> // Required for errno
 
 #include "parser.h"
 #include "executor.h"
@@ -32,6 +33,19 @@ void handle_sigint(int sig) {
 }
 
 /**
+ * handle_sigchld - Signal handler for SIGCHLD (Child process terminated).
+ * @sig: Signal number.
+ *
+ * Cleans up background processes that have finished.
+ */
+void handle_sigchld(int sig) {
+    (void)sig;
+    int saved_errno = errno;
+    while (waitpid(-1, NULL, WNOHANG) > 0) {}
+    errno = saved_errno;
+}
+
+/**
  * main - Entry point for Lemuen Shell.
  *
  * Initializes signal handling, readline, and runs the main shell loop.
@@ -39,6 +53,7 @@ void handle_sigint(int sig) {
  */
 int main() {
     signal(SIGINT, handle_sigint);
+    signal(SIGCHLD, handle_sigchld);
 
     using_history();
 
