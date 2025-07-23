@@ -66,6 +66,11 @@ int execute_single_command(command_t *cmd) {
     // Expand environment variables in command arguments
     expand_env_vars(cmd);
 
+    // Handle builtin commands without redirection/background directly
+    if (is_builtin(cmd) && !cmd->input_redirect && !cmd->output_redirect && !cmd->background) {
+        return run_builtin(cmd);
+    }
+
     // Handle background execution
     if (cmd->background) {
         return execute_background(cmd);
@@ -76,10 +81,7 @@ int execute_single_command(command_t *cmd) {
         return execute_with_redirection(cmd);
     }
 
-    // No redirection - handle builtin or external
-    if (is_builtin(cmd)) {
-        return run_builtin(cmd);
-    }
+    // No redirection - handle external
     return execute_external(cmd);
 }
 
