@@ -39,4 +39,6 @@ void wait_for_background_processes(void);
 // Signal handling for child processes
 void setup_child_signal_handlers(void);
 
+void cleanup_find_command_cache(void);
+
 #endif // EXECUTOR_H

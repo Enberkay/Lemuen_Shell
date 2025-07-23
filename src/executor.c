@@ -411,3 +411,18 @@ int execute_logical_chain(command_t **commands, int count) {
     
     return last_status;
 }
+
+/**
+ * cleanup_find_command_cache - Free static PATH cache used by find_command.
+ */
+void cleanup_find_command_cache(void) {
+    if (cached_paths) {
+        free_string_array(cached_paths);
+        cached_paths = NULL;
+    }
+    if (cached_path_env) {
+        free(cached_path_env);
+        cached_path_env = NULL;
+    }
+    cached_path_count = 0;
+}

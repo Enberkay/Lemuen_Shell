@@ -56,5 +56,6 @@ int main() {
     }
 
     printf("\nBye from Lemuen Shell!\n");
+    cleanup_find_command_cache();
     return 0;
 }
