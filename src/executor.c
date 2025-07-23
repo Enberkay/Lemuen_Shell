@@ -190,10 +190,12 @@ int execute_background(command_t *cmd) {
  * @command: Command name or path.
  *
  * Returns: Newly allocated string with full path, or NULL if not found.
+ *
+ * Optimization: Cache split $PATH result and only re-split if $PATH changes.
  */
 char *find_command(const char *command) {
     if (!command) return NULL;
-    
+
     // If command contains '/', treat as absolute or relative path
     if (strchr(command, '/')) {
         if (is_executable(command)) {
@@ -201,33 +203,44 @@ char *find_command(const char *command) {
         }
         return NULL;
     }
-    
-    // Search in PATH
+
+    // --- Optimization: cache split $PATH ---
+    static char **cached_paths = NULL;
+    static char *cached_path_env = NULL;
+    static int cached_path_count = 0;
     const char *path_env = getenv("PATH");
     if (!path_env) {
         return NULL;
     }
-    
-    int path_count;
-    char **paths = split_string(path_env, ":", &path_count);
-    if (!paths) {
+    if (!cached_path_env || strcmp(cached_path_env, path_env) != 0) {
+        // $PATH changed, re-split
+        if (cached_paths) {
+            free_string_array(cached_paths);
+            cached_paths = NULL;
+        }
+        if (cached_path_env) {
+            free(cached_path_env);
+            cached_path_env = NULL;
+        }
+        cached_path_env = strdup_safe(path_env);
+        cached_paths = split_string(path_env, ":", &cached_path_count);
+    }
+    if (!cached_paths) {
         return NULL;
     }
-    
+    // --- End optimization ---
+
     char *found_path = NULL;
-    for (int i = 0; i < path_count; i++) {
-        char *full_path = malloc(strlen(paths[i]) + strlen(command) + 2);
+    for (int i = 0; i < cached_path_count; i++) {
+        char *full_path = malloc(strlen(cached_paths[i]) + strlen(command) + 2);
         if (!full_path) continue;
-        
-        sprintf(full_path, "%s/%s", paths[i], command);
+        sprintf(full_path, "%s/%s", cached_paths[i], command);
         if (is_executable(full_path)) {
             found_path = full_path;
             break;
         }
         free(full_path);
     }
-    
-    free_string_array(paths);
     return found_path;
 }
 
