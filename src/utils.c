@@ -347,9 +347,8 @@ char *expand_env_var_in_string(const char *str) {
  */
 void expand_env_vars(command_t *cmd) {
     if (!cmd || !cmd->args) return;
-    
     for (int i = 0; i < cmd->argc; i++) {
-        if (cmd->args[i]) {
+        if (cmd->args[i] && strchr(cmd->args[i], '$')) { // Only expand if '$' present
             char *expanded = expand_env_var_in_string(cmd->args[i]);
             if (expanded) {
                 free(cmd->args[i]);
